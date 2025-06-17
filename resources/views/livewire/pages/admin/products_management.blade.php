@@ -13,7 +13,23 @@ new
 class extends Component {
     use Toast, WithPagination, WithoutUrlPagination;
 
-    protected $rules = [
+    protected $prd_parent_rules = [
+        'prd_id' => ["required"],
+        'prd_name' => ["required", "string", 'max:100'],
+        'prd_cate' => ["required", "string", 'max:50'],
+        'prd_brand' => ["required", "string", 'max:50']
+    ];
+    protected $prd_child_rules = [
+        'prd_id' => ["required"],
+        'prd_name' => ["required", "string", 'max:100'],
+        'prd_size' => ["required", "string", 'max:50'],
+        'prd_servings' => ["required", "int"],
+        'prd_flavor' => ["required", "string", 'max:50'],
+        'prd_price' => ["required", 'numeric'],
+        'prd_quantity' => ["required", 'numeric'],
+        'prd_status' => ["required", "string", 'max:50'],
+    ];
+    protected $add_prd_rules = [
         'prd_id' => ["required"],
         'prd_name' => ["required", "string", 'max:100'],
         'prd_cate' => ["required", "string", 'max:50'],
@@ -23,11 +39,15 @@ class extends Component {
         'prd_flavor' => ["required", "string", 'max:50'],
         'prd_price' => ["required", 'numeric'],
         'prd_quantity' => ["required", 'numeric'],
+//        'prd_status' => ["required", "string", 'max:50'],
     ];
     public string $search = '';
 //    public bool $filter_drawer = false;
     public bool $add_drawer = false;
     public bool $edit = false;
+    public bool $editPrdChild = false;
+
+    public array $expanded = [1];
 
     public $prd_id;
     public $prd_name;
@@ -38,6 +58,7 @@ class extends Component {
     public $prd_flavor;
     public $prd_price;
     public $prd_quantity;
+    public $prd_status;
 
     // Clear filters
     public function clear(): void
@@ -48,7 +69,7 @@ class extends Component {
 
     public function saveEdit(): void
     {
-        $validated = $this->validate($this->rules);
+        $validated = $this->validate($this->prd_parent_rules);
         if (\App\Models\Categories::where("name", $validated['prd_cate'])->doesntExist()) {
             \App\Models\Categories::create(['name' => $validated['prd_cate']]);
         }
@@ -62,11 +83,35 @@ class extends Component {
                 "name" => $validated['prd_name'],
                 "brand_id" => $brand_id,
                 "cate_id" => $cate_id,
+//                "size" => $validated['prd_size'],
+//                "flavor" => $validated['prd_flavor'],
+//                "servings" => $validated['prd_servings'],
+//                "price" => floatval($validated['prd_price']),
+//                "quantity" => $validated['prd_quantity'],
+            ]
+        );
+        if ($product > 0) {
+            // Update successful
+            $this->reset();
+            $this->success('Updated', position: 'toast-bottom', timeout: 4000);
+        } else {
+            // No rows were updated
+            $this->reset();
+            $this->error('Something is wrong.Please try again!', position: 'toast-bottom', timeout: 4000);
+        }
+    }
+    public function saveEditPrdChild() :void {
+        $validated = $this->validate($this->prd_child_rules);
+//        dd($validated);
+        $product = \App\Models\ProductDetails::where("id", $validated['prd_id'])->update(
+            [
+                "name" => $validated['prd_name'],
                 "size" => $validated['prd_size'],
                 "flavor" => $validated['prd_flavor'],
                 "servings" => $validated['prd_servings'],
                 "price" => floatval($validated['prd_price']),
                 "quantity" => $validated['prd_quantity'],
+                "status" => $validated['prd_status']
             ]
         );
         if ($product > 0) {
@@ -82,7 +127,10 @@ class extends Component {
 
     public function saveAdd(): void
     {
-        $validated = $this->validate($this->rules);
+        $validated = $this->validate($this->add_prd_rules);
+        dd($validated);
+//        Check if product parent exist?
+
         if (\App\Models\Categories::where("name", $validated['prd_cate'])->doesntExist()) {
             \App\Models\Categories::create(['name' => $validated['prd_cate']]);
         }
@@ -109,9 +157,9 @@ class extends Component {
     }
 
     // Delete action
-    public function delete($id): void
+    public function deletePrdChild($id): void
     {
-        $product = \App\Models\Products::where("id",$id)->update(
+        $product = \App\Models\ProductDetails::where("id",$id)->update(
             [
                 "status" => 'Hidden'
             ]
@@ -119,7 +167,7 @@ class extends Component {
         if ($product > 0) {
             // Update successful
             $this->reset();
-            $this->warning('Cannot delete associated product,change product status to hidden instead', position: 'toast-bottom', timeout: 6000);
+            $this->warning('Updated child product visibility', position: 'toast-bottom', timeout: 6000);
         } else {
             // No rows were updated
             $this->reset();
@@ -127,41 +175,57 @@ class extends Component {
         }
     }
 
-    public function openEditModal($product)
+    public function openEditPrdParentModal($product)
     {
         $this->prd_id = $product['id'] ?? null;
         $this->prd_name = $product['name'] ?? null;
         $this->prd_brand = $product['brand']['name'] ?? null;
         $this->prd_cate = $product['cate']['name'] ?? null;
+    }
+    public function openEditPrdChildModal($product)
+    {
+//        dd($product);
+        $this->prd_id = $product['id'] ?? null;
+        $this->prd_name = $product['product']['name'] ?? null;
         $this->prd_size = $product['size'] ?? null;
         $this->prd_servings = $product['servings'] ?? null;
         $this->prd_flavor = $product['flavor'] ?? null;
         $this->prd_price = $product['price'] ?? null;
         $this->prd_quantity = $product['quantity'] ?? null;
+        $this->prd_status = $product['status'] ?? null;
     }
 
-    // Table headers
     public function headers(): array
     {
         return [
-            ['key' => 'id', 'label' => '#', 'class' => 'w-1 text-primary'],
+            ['key' => 'id', 'label' => '', 'class' => 'w-1 text-primary'],
             ['key' => 'name', 'label' => 'Name', 'class' => 'w-96 text-primary'],
             ['key' => 'brand.name', 'label' => 'Brand', 'class' => 'w-48 text-primary'],
             ['key' => 'cate.name', 'label' => 'Category', 'class' => 'w-48 text-primary'],
-            ['key' => 'size', 'label' => 'Size', 'class' => 'w-20 text-primary'],
+            ['key' => 'any', 'label' => ''],
+        ];
+    }
+    public function sm_headers(): array
+    {
+        return [
+            ['key' => 'id', 'label' => '', 'class' => 'w-1 text-primary'],
+            ['key' => 'name', 'label' => 'Name', 'class' => 'w-96 text-primary'],
+            ['key' => 'size', 'label' => 'Size', 'class' => 'w-48 text-primary'],
             ['key' => 'flavor', 'label' => 'Flavor', 'class' => 'w-48 text-primary'],
             ['key' => 'servings', 'label' => 'Servings', 'class' => 'w-20 text-primary'],
-            ['key' => 'price', 'label' => 'Price', 'class' => 'text-primary'],
+            ['key' => 'price', 'label' => 'Price($)', 'class' => 'text-primary'],
             ['key' => 'quantity', 'label' => 'Quantity', 'class' => 'text-primary'],
             ['key' => 'status', 'label' => 'Status', 'class' => 'w-36 text-primary'],
-            ['key' => 'any', 'label' => ''],
+            ['key' => 'any', 'label' => '']
         ];
     }
 
     public function products()
     {
 //        $products = \App\Models\Products::paginate(10);
-        $products = \App\Models\Products::where("name","LIKE","%$this->search%")->paginate(10);
+        $products = \App\Models\Products::where("name","LIKE","%$this->search%")->with('details')->paginate(10);
+//        $products = \App\Models\Products::where("name","LIKE","%$this->search%")->with('details')->first();
+//        dd($products);
         return $products;
     }
 
@@ -169,7 +233,8 @@ class extends Component {
     {
         return [
             'products' => $this->products(),
-            'headers' => $this->headers()
+            'headers' => $this->headers(),
+            'sm_headers' => $this->sm_headers()
         ];
     }
 }; ?>
@@ -214,44 +279,95 @@ class extends Component {
         </x-ui-form>
     </x-ui-drawer>
     <x-ui-card>
-        <x-ui-table :headers="$headers" :rows="$products" with-pagination class="table-md">
 
-            @scope('cell_status', $product)
-                @if($product['status'] == 'Available' && $product['quantity'] != 0)
-                <x-ui-badge value="{{$product['status']}}" class="bg-green-400" />
-                @elseif($product['quantity'] == 0)
-                <x-ui-badge value="Out of stock" class="badge-error" />
-                @else
-                <x-ui-badge value="Hidden" class="badge-warning" />
-                @endif
-            @endscope
-            @scope('cell_any', $product)
-            <x-ui-button icon="o-pencil-square" spinner class="btn-sm btn-warning"
-                         @click="$wire.edit = true,$wire.openEditModal({{$product}})"/>
+        <x-ui-table :headers="$headers" :rows="$products" with-pagination class="table-md" wire:model="expanded" expandable>
+            @scope('expansion', $product,$sm_headers)
+            <div class="bg-base-200 p-8 font-bold">
+                <x-ui-table :headers="$sm_headers" :rows="$product->details" class="table-sm" striped>
+                    @foreach($product->details as $details)
+{{--                        {{dd($details)}}--}}
+                        @scope('cell_name', $details)
+                        <span>{{$details->product->name}}</span>
+                        @endscope
+                        @scope('cell_status', $details)
+                            @if($details['status'] == 'Available' && $details['quantity'] != 0)
+                            <x-ui-badge value="{{$details['status']}}" class="bg-green-400" />
+                            @elseif($details['quantity'] == 0)
+                            <x-ui-badge value="Out of stock" class="badge-error" />
+                            @else
+                            <x-ui-badge value="Hidden" class="badge-warning" />
+                            @endif
+                        @endscope
+                        @scope('cell_any', $details)
+                        <x-ui-button icon="o-pencil-square" spinner class="btn-sm btn-warning" tooltip="Edit"
+                                     @click="$wire.editPrdChild = true,$wire.openEditPrdChildModal({{$details}})"/>
+                        @endscope
+                        @scope('actions', $details)
+                        <x-ui-button icon="o-trash" wire:click="deletePrdChild({{ $details['id'] }})" spinner
+                                     class="btn-sm hover:btn-error hover:text-white"/>
+                        @endscope
+                    @endforeach
+                </x-ui-table>
+            </div>
             @endscope
 
+{{--            @scope('cell_any', $product)--}}
+{{--            <x-ui-button icon="o-pencil-square" spinner class="btn-sm btn-warning"--}}
+{{--                         @click="$wire.edit = true,$wire.openEditPrdParentModal({{$product}})"/>--}}
+{{--            <x-ui-button icon="o-trash" wire:click="deletePrdParent({{ $product->id }})" spinner--}}
+{{--                         class="btn-sm hover:btn-error hover:text-white"/>--}}
+{{--            @endscope--}}
             @scope('actions', $product)
-
-            <x-ui-button icon="o-trash" wire:click="delete({{ $product->id }})" spinner
-                         class="btn-sm hover:btn-error hover:text-white"/>
+            <x-ui-button icon="o-pencil-square" spinner class="btn-sm btn-warning" tooltip-left="Edit product parent infos"
+                         @click="$wire.edit = true,$wire.openEditPrdParentModal({{$product}})"/>
+            {{--            <x-ui-button icon="o-trash" wire:click="deletePrdParent({{ $product->id }})" spinner--}}
+            {{--                         class="btn-sm hover:btn-error hover:text-white"/>--}}
             @endscope
         </x-ui-table>
     </x-ui-card>
 
     {{--    edit modal--}}
-    <x-ui-modal wire:model="edit" title="Edit panel" subtitle="Change product infomation">
+    <x-ui-modal wire:model="edit" title="Edit panel" subtitle="Change parent product information">
         <x-ui-form wire:submit="saveEdit">
             <x-ui-input label="Product ID" disabled wire:model="prd_id"/>
             <x-ui-input label="Name" wire:model="prd_name"/>
             <x-ui-input label="Brand" wire:model="prd_brand"/>
             <x-ui-input label="Category" wire:model="prd_cate"/>
+{{--            <x-ui-input label="Size" wire:model="prd_size"/>--}}
+{{--            <x-ui-input label="Flavor" wire:model="prd_flavor"/>--}}
+{{--            <x-ui-input label="Price" wire:model="prd_price"/>--}}
+{{--            <x-ui-input label="Servings" wire:model="prd_servings"/>--}}
+{{--            <x-ui-input label="Quantity" wire:model="prd_quantity"/>--}}
+            <x-slot:actions>
+                <x-ui-button label="Cancel" @click="$wire.edit = false"/>
+                <x-ui-button label="Save" class="btn-success" type="submit" spinner="save"/>
+            </x-slot:actions>
+        </x-ui-form>
+    </x-ui-modal>
+
+    {{--    edit modal--}}
+    <x-ui-modal wire:model="editPrdChild" title="Edit panel" subtitle="Change child product information">
+        <x-ui-form wire:submit="saveEditPrdChild">
+            <x-ui-input label="Child product ID" disabled wire:model="prd_id"/>
+            <x-ui-input label="Name" disabled wire:model="prd_name"/>
+{{--            <x-ui-input label="Brand" wire:model="prd_brand"/>--}}
+{{--            <x-ui-input label="Category" wire:model="prd_cate"/>--}}
             <x-ui-input label="Size" wire:model="prd_size"/>
             <x-ui-input label="Flavor" wire:model="prd_flavor"/>
             <x-ui-input label="Price" wire:model="prd_price"/>
             <x-ui-input label="Servings" wire:model="prd_servings"/>
             <x-ui-input label="Quantity" wire:model="prd_quantity"/>
+            <label class="form-control w-full max-w-xs">
+                <div class="label">
+                    <span class="label-text">Status</span>
+                </div>
+                <select class="select select-bordered select-info" wire:model="prd_status">
+                    <option value="Available" selected>Available</option>
+                    <option value="Hidden">Hidden</option>
+                </select>
+            </label>
             <x-slot:actions>
-                <x-ui-button label="Cancel" @click="$wire.edit = false"/>
+                <x-ui-button label="Cancel" @click="$wire.editPrdChild = false"/>
                 <x-ui-button label="Save" class="btn-success" type="submit" spinner="save"/>
             </x-slot:actions>
         </x-ui-form>
