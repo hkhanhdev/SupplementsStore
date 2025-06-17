@@ -24,6 +24,8 @@ class extends Component {
         'phone' => ['required','regex:/^(?:\+84|0)?[1-9]\d{8,9}$/']
     ];
 
+
+
     public function placeOrder($cart_id)
     {
         $validated = $this->validate($this->rules);
@@ -189,7 +191,9 @@ class extends Component {
                         </thead>
                         <tbody>
                         @forelse($items as $item)
-                            <tr x-data="{ count: {{$item->cart_quantity}},price:{{$item->product->price}}}">
+                            <tr
+                                x-data="{ count: {{$item->cart_quantity}},price:{{$item->product_details->price}}}"
+                            >
                                 <td>##{{$item->item_id}}</td>
                                 <td><img class="h-16 w-16 mr-4" src="{{$item->product->cate->img_url}}" alt="Product image"></td>
                                 <td class="w-48">{{$item->product->name}}</td>
@@ -201,11 +205,13 @@ class extends Component {
                                 <td>{{$item->product_details->servings}}</td>
                                 <td>
                                     <div class="flex">
-                                        <button class="btn btn-outline btn-error btn-xs" x-on:click="count = count > 1 ? count-1 : count"
+                                        <button class="btn btn-outline btn-error btn-xs"
+                                                x-on:click="count = count > 1 ? count-1 : count"
                                                 wire:click="updateItem({{$item->item_id}},price,'decrement')" wire:loading.class="loading loading-spinner btn-disabled"
                                         >-</button>
                                         <span x-model="count" x-text="{{$item->cart_quantity}}" class="mx-2"></span>
-                                        <button class="btn btn-outline btn-success btn-xs" x-on:click="count++"
+                                        <button class="btn btn-outline btn-success btn-xs"
+                                                x-on:click="count++"
                                                 wire:click="updateItem({{$item->item_id}},price,'increment')" wire:loading.class="loading loading-spinner btn-disabled"
                                         >+</button>
                                     </div>
