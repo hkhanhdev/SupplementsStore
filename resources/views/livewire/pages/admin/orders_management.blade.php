@@ -37,7 +37,7 @@ class extends Component {
         $current_cart_id = $this->getCartID();
         $order = \App\Models\Orders::find($current_cart_id);
         $order->update(['name'=>$this->name,'email'=>$this->email,'phone'=>$this->phone,'address'=>$this->address,'status'=>'delivered']);
-        $this->success("Order $order->cart_id made!",position: 'toast-bottom');
+        $this->success("Order $order->id made!",position: 'toast-bottom');
         $this->reset();
     }
     public function processingCart($product_id,$cart_quan,$subtotal)
@@ -52,7 +52,7 @@ class extends Component {
     protected function addToCart($cart_id,$product_id,$quantity,$total)
     {
         // Check if the product already exists in the cart
-        $existingCartItem = \App\Models\CartItems::where('cart_id', $cart_id)
+        $existingCartItem = \App\Models\CartItems::where('order_id', $cart_id)
             ->where('product_id', $product_id)
             ->first();
 
@@ -70,7 +70,7 @@ class extends Component {
         } else {
             // Product does not exist in the cart, insert a new cart item
             $cartItem = \App\Models\CartItems::create([
-                'cart_id' => $cart_id,
+                'order_id' => $cart_id,
                 'product_id' => $product_id,
                 'cart_quantity' => $quantity,
                 'subtotal' => $total,
@@ -87,13 +87,13 @@ class extends Component {
     protected function getCartID():int
     {
         $seller_id = auth()->user()->id;
-        $order = \App\Models\Orders::query()->where(['status'=>'in cart','seller_id' => $seller_id])->get('cart_id')->first();
+        $order = \App\Models\Orders::query()->where(['status'=>'in cart','seller_id' => $seller_id])->get('id')->first();
 
         if($order == null) {
             $new_order = \App\Models\Orders::create(['seller_id'=>$seller_id]);
-            return $new_order->cart_id;
+            return $new_order->id;
         }else {
-            return $order->cart_id;
+            return $order->id;
         }
     }
 
@@ -146,7 +146,7 @@ class extends Component {
     protected function getCartItems()
     {
         $cart_id = $this->getCartID();
-        $cart_items = \App\Models\CartItems::query()->where("cart_id",$cart_id)->get();
+        $cart_items = \App\Models\CartItems::query()->where("order_id",$cart_id)->get();
         return $cart_items;
     }
     public function updateItem($item_id,$based_price,$mode)
@@ -191,7 +191,7 @@ class extends Component {
     }
     public function orders()
     {
-        $orders = \App\Models\Orders::where("cart_id","LIKE","%$this->search%")->where('status', '!=', 'in cart')->orderBy('cart_id', 'DESC')->paginate(3);
+        $orders = \App\Models\Orders::where("id","LIKE","%$this->search%")->where('status', '!=', 'in cart')->orderBy('id', 'DESC')->paginate(3);
         return $orders;
     }
 
@@ -227,6 +227,7 @@ class extends Component {
                     <th></th>
                     <th></th>
                     <th></th>
+                    <th></th>
                     <th>Seller</th>
                     <th>Customer name</th>
                     <th>Customer email</th>
@@ -240,11 +241,12 @@ class extends Component {
                 <tbody>
                 @foreach($orders as $order)
                     <tr class="bg-base-200">
-                        <td>{{$order->cart_id}}</td>
+                        <td>{{$order->id}}</td>
                         <th>Image</th>
                         <th>Product Name</th>
                         <th>Price</th>
                         <th>Quantity</th>
+                        <th>Description</th>
                         <th>Subtotal</th>
                         <td>{{$order->seller?$order->seller->name: ''}}</td>
                         <td>{{$order->name??$order->customer->name??''}}</td>
@@ -256,13 +258,13 @@ class extends Component {
                             <td><span class="badge badge-warning">Pending</span></td>
                             <td>
                                 <div class="join join-vertical lg:join-horizontal">
-                                    <button class="btn join-item btn-sm btn-success" wire:click="updateOrdStatus({{$order->cart_id}},'confirm')">Confirm</button>
-                                    <button class="btn join-item btn-sm btn-error" wire:click="updateOrdStatus({{$order->cart_id}},'cancel')">Cancel</button>
+                                    <button class="btn join-item btn-sm btn-success" wire:click="updateOrdStatus({{$order->id}},'confirm')">Confirm</button>
+                                    <button class="btn join-item btn-sm btn-error" wire:click="updateOrdStatus({{$order->id}},'cancel')">Cancel</button>
                                 </div>
                             </td>
                         @elseif($order->status == 'delivering')
                             <td><span class="badge badge-info">Delivering</span></td>
-                            <td><button class="btn btn-sm btn-success" wire:click="updateOrdStatus({{$order->cart_id}},'delivered')">Delivered</button></td>
+                            <td><button class="btn btn-sm btn-success" wire:click="updateOrdStatus({{$order->id}},'delivered')">Delivered</button></td>
                         @elseif($order->status == 'delivered')
                             <td><span class="badge bg-green-400">Delivered</span></td>
                         @elseif($order->status == 'success')
@@ -283,8 +285,9 @@ class extends Component {
                                 <img src="{{$item->product->cate->img_url}}" alt="">
                             </td>
                             <td >{{$item->product->name}}</td>
-                            <td>${{$item->product->price}}</td>
+                            <td>${{$item->product_details->price}}</td>
                             <td >{{$item->cart_quantity}}</td>
+                            <td>{{$item->product_details->size}} <br><br>{{$item->product_details->flavor}}<br><br>{{$item->product_details->servings}}</td>
                             <td >${{$item->subtotal}}</td>
                             <td></td>
                             <td></td>
