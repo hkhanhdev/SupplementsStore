@@ -52,7 +52,7 @@ class Orders extends Model
                 DB::raw('MONTH(orders.created_at) AS month'),
                 DB::raw('SUM(cart_items.subtotal) AS revenue')
             )
-            ->join('cart_items', 'orders.cart_id', '=', 'cart_items.cart_id')
+            ->join('cart_items', 'orders.id', '=', 'cart_items.order_id')
             ->groupBy(DB::raw('YEAR(orders.created_at)'), DB::raw('MONTH(orders.created_at)'))
             ->get();
 //        dd($revenueByMonth);
