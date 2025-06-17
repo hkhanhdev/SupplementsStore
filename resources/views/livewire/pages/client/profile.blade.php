@@ -182,7 +182,7 @@ class extends Component {
                                         @elseif($order->status == 'delivered')
                                             <span class="font-semibold">Status:<span class="badge badge-success">Delivered</span></span>
 {{--                                            <button class="btn btn-error btn-disabled">Cancel order</button>--}}
-                                            <button class="btn btn-success" wire:click="received({{$order->cart_id}})" wire:loading.class="loading loading-spin">Received</button>
+                                            <button class="btn btn-success" wire:click="received({{$order->id}})" wire:loading.class="loading loading-spin">Received</button>
                                         @elseif($order->status == 'success')
                                             <span class="font-semibold">Status:<span class="badge badge-success">Received</span></span>
                                         @else
