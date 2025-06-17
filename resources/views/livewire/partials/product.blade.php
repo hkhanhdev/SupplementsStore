@@ -199,7 +199,8 @@ new class extends Component {
 {{--        <div class="px-4 py-10 rounded-md shadow-sm  relative flex justify-center w-96 bg-white">--}}
 {{--            <img src="{{$product->cate->img_url}}" alt="Product" class="rounded object-cover" />--}}
 {{--        </div>--}}
-{{--        <div class="mt-6 flex flex-wrap flex-col justify-center mx-auto items-center" x-data="{ count: 1, price: {{$price}}, maxQuantity: {{$quantity??null}} }">--}}
+
+{{--        <div class="mt-6 flex flex-wrap flex-col justify-center mx-auto items-center" x-data="{ count: 1, price: 2222, maxQuantity: 10 }">--}}
 {{--            <h2 class="text-2xl font-extrabold">{{$product->name}}</h2>--}}
 {{--            <div class="flex gap-4 mt-2 justify-center">--}}
 {{--                <p class="text-2xl font-bold" x-text="'$'+(count*price).toFixed(2)"></p>--}}
@@ -213,19 +214,23 @@ new class extends Component {
 {{--            </div>--}}
 {{--            <button class="btn btn-wide btn-lg btn-primary hover:scale-105 text-primary-content" wire:click="processCart({{$product->id}},count,count*price)">Add to cart</button>--}}
 {{--        </div>--}}
-
 {{--    </div>--}}
+
     <div class="flex flex-col p-10">
         <div class="px-4 py-10 rounded-md shadow-sm relative flex justify-center w-96 bg-white">
             <img src="{{ $product->cate->img_url }}" alt="Product" class="rounded object-cover" />
         </div>
         <div class="mt-6 flex flex-wrap flex-col justify-center mx-auto items-center">
-            <h2 class="text-2xl font-extrabold">{{ $product->name }}</h2>
+            <h2 class="text-2xl font-extrabold text-center">{{ $product->name }}</h2>
+            <br>
+            <br>
             <div class="flex gap-4 mt-2 justify-center">
                 <p class="text-2xl font-bold transition-opacity duration-300 ease-in-out"
                    >
                     @if($price != null)
                         ${{ number_format($count * $price, 2) }}
+                    @elseif(number_format($minPrice, 2) == number_format($maxPrice, 2))
+                        ${{ number_format($minPrice, 2) }}
                     @else
                         ${{ number_format($minPrice, 2) }} - ${{ number_format($maxPrice, 2) }}
                     @endif
@@ -254,6 +259,7 @@ new class extends Component {
             </button>
         </div>
     </div>
+
     <div class="divider divider-horizontal"></div>
     <div class="card-body">
         <div class="px-6">
